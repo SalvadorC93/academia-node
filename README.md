@@ -15,5 +15,7 @@ Whenever your client socket receives data, pipe it to your standard output strea
 
 extra features:
 1. Allow username registration.
-2. Make your chatroom be PG. As the Admin, determine a list of banned words. If a user uses any of those banned words,
+2. Do not allow for any user to set their userneme to ADMIN. 
+3. Whenever the admin (server.js) sends a message, make it's "username" be ADMIN. (ADMIN says: ...)
+4. Make your chatroom be PG. As the Admin, determine a list of banned words. If a user uses any of those banned words,
 kick them out of the chat.
