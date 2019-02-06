@@ -1,15 +1,16 @@
 'use strict'
 
-const net = require('net');
-let connect =null;
+const net = require('net')
+let connect =null
+let coninterval
 
 
 let con = () =>{
 
 let myClient = net.connect(8080, 'localhost' , () => {
     
-
-    console.log("Enter your username: ")
+    clearInterval(coninterval)
+    console.log("Enter your username(it must contain at least 3 characters): ")
     process.stdin.on('data' , data =>{
         myClient.write(data);
     })
@@ -30,14 +31,19 @@ return myClient;
 
 let conect = con();
 
-conect.on('aloha',()=>{
-    console.log("aloha")
-})
 
 conect.on("error",(error) =>{
-    console.log("Error reaching the server please restart the aplication")
-    conect.destroy();
-})
+    retryconection();
+  })
+
+let retryconection = () =>{
+        coninterval = setInterval( () => {
+            console.clear();
+        console.log("Error reaching the server, trying again.")
+        conect.destroy()
+        conect=con()
+    },1000)
+}
 
 /* let retry = setInterval(() => conect.on("error",(error) =>{
     console.log("lol");

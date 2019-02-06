@@ -1,28 +1,56 @@
 'use strict'
 
 const server = require('net').createServer()
+const {EventEmitter} = require('events')
+const emitter = new EventEmitter
 const fs = require('fs')
 const {StringDecoder} = require('string_decoder')
 const decoder = new StringDecoder('utf-8')
-const bannedwords=["fuck",'shit','dick','bitch']
+const bannedwords=["fuck",'shit','dick']
 const users = []
+const date = new Date()
+const path = `./${date.getDay()}-${date.getMonth()+1}-${date.getFullYear()}Chatlog.txt`
 
 
 server.on('connection', socket =>{
     let counter=0
+    
+    
     setInterval(()=> {counter = 0
         },10000)
     let message = (msg)=>{
-        counter<10 ? (process.stdout.write(`${username} says: ${msg} \n`),counter++)
+        counter<10 ? (process.stdout.write(`${username} says: ${msg} \n`),counter++,appendchatlog(username,msg))
         : socket.write(`ADMIN says: You have sended a lot messages in quick succecion please wait a moment`)
     }
+/********************************************************************************************************** */
+    let logout = (username)=>{
+        for(let user in users){
+            users[user] === username ?
+            users.splice(user,1):
+            false
+        }
+
+    }
+    /**************************************************************************************************** */
+    let validateusername = (username)=>{
+        let validation = false;
+        for(let user in users){
+            users[user] === username ?
+            validation=true:
+            false
+        }
+        return validation
+
+    }
+    /**************************************************************************************************** */
     let asignusername = (msg) =>{
-        msg == "ADMIN" ? socket.write("Usuario no disponible intente con un nuevo usuario: ")
-        :(username=msg,process.stdout.write(`${username} joined \n`), users.push(username))
+        let validation = validateusername(msg)
+        msg == "ADMIN" || msg.length<2 || validation == true ? socket.write("Usuario no disponible intente con un nuevo usuario: ")
+        :(username=msg,process.stdout.write(`${username} joined \n`),users.push(username))
             //server.write(`${username} joined \n`);
     }
 
-    
+    /**************************************************************************************************** */
     const filter = (msg) =>{
         let ban =false;
         for(let word of bannedwords){
@@ -33,6 +61,7 @@ server.on('connection', socket =>{
         return ban;
         
     }   
+    /************************************************************************************************** */
     const Admincommand = (data) =>{
         let command = false
         let banword = ""
@@ -41,10 +70,20 @@ server.on('connection', socket =>{
         msg === '/userlist' ? (console.log(users), command = true): false
         msg === '/bannedwords' ? (console.log(bannedwords), command = true): false
         validate>-1 ? (banword = msg.split(" "),bannedwords.push(banword[1]), command = true) : false
-        command === false ? (socket.write(`ADMIN says: ${data}`)): false
+        command === false ? (socket.write(`ADMIN says: ${msg}\n`), appendchatlog("Admin",msg)): false
     }
 
-    console.log(" client conected");
+/**************************************************************************************************** */
+    const appendchatlog = (user,msg) =>{
+        fs.appendFile(`./${date.getDay()}-${date.getMonth()+1}-${date.getFullYear()}Chatlog.txt`,`${user} says: ${msg} \n`, 
+        function(err) {
+            if(err) {
+                return console.log(err);
+            }
+        });
+        }
+ /************************************************************************************************* */       
+    console.log("client conected");
     let username = false;
     socket.on('data', data => {
         let msg =  decoder.write(data).trim();
@@ -65,14 +104,14 @@ server.on('connection', socket =>{
     
     process.stdin.on('data' , data =>{   
         Admincommand(data); 
-        socket.emit("aloha",() =>{
-            console.log("emiting")
-        });
-        
     })
 
+    
+
     socket.on("end", ()=>{
-        console.log(`bye ${username}`);
+        username != "" ?
+        console.log(`bye ${username}, have a nice day!`):console.log("Un usuario ah sido banneado")
+        logout(username)
     })
 
     
@@ -80,13 +119,23 @@ server.on('connection', socket =>{
 } )
 
 
-fs.writeFile("./test", "Hey there!", function(err) {
-    if(err) {
-        return console.log(err);
-    }
+fs.access(path, fs.F_OK, (err) => {
+  if (err) {
+    fs.writeFile(path, "Hey there!\n", function(err) {
+        if(err) {
+            return console.log(err);
+        }
+    
+        console.log("The chatlog has been created");
+    });
+    return
+  }
 
-    console.log("The file was saved!");
-});
+  //file exists
+})
+
+
+
 
 server.listen(8080, () => {
     console.log(`server is listening in te port ${8080}`);
